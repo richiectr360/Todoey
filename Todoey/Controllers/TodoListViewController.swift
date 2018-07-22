@@ -12,28 +12,14 @@ class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
+       print(dataFilePath)
         
-        let newItem2 = Item()
-        newItem.title = "Buy Eggos"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem.title = "Destroy Demogorgon"
-        itemArray.append(newItem3)
-        
-        
-        //retrieving array of items.
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item]{
-            itemArray = items
-        }
+        loadItems()
         
     }
     
@@ -64,19 +50,7 @@ class TodoListViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done // ! means opposite
         
-//        if itemArray[indexPath.row].done == false {
-//            itemArray[indexPath.row].done = true
-//        } else {
-//            itemArray[indexPath.row].done = false
-//        }
-
-        //check to see if it has accessory type
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        } else {
-            //Once click th cell, chceck mark appears.
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
+        saveItems()
         
         //Flashes a bit then disappears.
         tableView.deselectRow(at: indexPath, animated: true)
@@ -101,11 +75,8 @@ class TodoListViewController: UITableViewController {
             
             self.itemArray.append(newItem)
             
-            //defaults -> Var from above.
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            self.saveItems()
             
-            //Once u add it, reload it.
-            self.tableView.reloadData()
         }
         
         alert.addTextField { (alertTextField) in
@@ -118,6 +89,35 @@ class TodoListViewController: UITableViewController {
         alert.addAction(action)
         
         present(alert, animated: true, completion: nil)
+    }
+    
+    //MARK - Model Manipulation Method
+    
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        // Do Try Catch - Since there are throws.
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        //Once u add it, reload it.
+        self.tableView.reloadData()
+    }
+    
+    func loadItems(){
+        //Try? will return things as Optional, so u need optional binding.
+        if let data = try? Data(contentsOf: dataFilePath!){
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray =try decoder.decode([item].self, from: data)
+            } catch {
+                print("Error decoding item array, \(error)")
+            }
+            
+        }
     }
     
 }
